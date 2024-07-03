@@ -1,0 +1,20 @@
+fileFormatVersion: 2
+guid: 4b5d5dfa385f54396b1aa881226273b0
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - linePrefab: {fileID: 1686463387692311069, guid: b79b894a08fc0459ebfd762a63115330,
+      type: 3}
+  - centralObjectPrefab: {fileID: 5837060362602169097, guid: 81f972cb2dfaa4129801133e72c745ab,
+      type: 3}
+  - raycastLinePrefab: {fileID: 1686463387692311069, guid: b79b894a08fc0459ebfd762a63115330,
+      type: 3}
+  - planePrefab: {fileID: 590265732095918029, guid: 74a987a9c13c9435899ecfa6dd0c16b6,
+      type: 3}
+  - transformHandle: {instanceID: 0}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
