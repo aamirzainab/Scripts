@@ -59,13 +59,52 @@ public class PolygonDrawer : MonoBehaviour
         }
     }
 
+    // public void SetupPolygon(Vector3 qrPosition, Quaternion qrRotation)
+    // {
+    //     CalculateVertices(qrPosition, qrRotation);
+    //     InitializeObjects();
+    //     lastPosition = centralObject.transform.position;
+    //     lastRotation = centralObject.transform.rotation;
+    // }
+
     public void SetupPolygon(Vector3 qrPosition, Quaternion qrRotation)
     {
-        CalculateVertices(qrPosition, qrRotation);
-        InitializeObjects();
+        // SetupPlanePrefab(qrPosition, qrRotation);
         lastPosition = centralObject.transform.position;
         lastRotation = centralObject.transform.rotation;
     }
+    public void SetupPlanePrefab(Vector3 qrPosition, Quaternion qrRotation, GameObject existingPlaneObject)
+    {
+        Debug.Log("Zainab Rotation Angles: " + qrRotation.eulerAngles);
+
+        // Offsets to position the center of the plane based on your specific needs
+        float forwardOffset = 1.4986f;  // Distance forward from the QR code
+        float upwardOffset = 0.8128f;   // Distance upward from the QR code
+        float width = 1.86f;            // Width of the plane
+        float height = 0.726f;          // Height of the plane
+
+        // Drawing rays for visual debugging (helpful to see in the Scene view)
+        // Debug.DrawRay(qrPosition, Vector3.forward * 10, Color.blue, 120.0f);
+        // Debug.DrawRay(qrPosition, Vector3.up * 10, Color.green, 120.0f);
+        // Debug.DrawRay(qrPosition, Vector3.right * 10, Color.red, 120.0f);
+
+        // Calculate the center position of the plane using only the QR code's position and local offsets
+        
+
+        // Resetting rotation to make the plane face upward regardless of the QR code's rotation
+        existingPlaneObject.transform.rotation = Quaternion.Euler(0, 0, 0);
+        Vector3 centerPosition = qrPosition + new Vector3(forwardOffset, upwardOffset, 0);
+
+        Debug.Log("Zainab this is the centerPosition being used to move the cube " + centerPosition);
+        existingPlaneObject.transform.SetPositionAndRotation(centerPosition, Quaternion.Euler(0, 0, 0));
+        existingPlaneObject.transform.localScale = new Vector3(width, height, 20.00f);
+    }
+
+        // existingPlaneObject.transform.localPosition -= new Vector3(width / 2, 0, height / 2);
+        // planeObject = Instantiate(planePrefab, centerPosition, qrRotation );
+        // planeObject.transform.localScale = new Vector3(width, height, 5.00f);  
+        // planeObject.transform.localPosition -= new Vector3(width / 2, 0, height / 2);
+
 
     void InitializeObjects()
     {
@@ -104,6 +143,7 @@ public class PolygonDrawer : MonoBehaviour
         float rightOffset = width / 2.0f;
 
         Vector3 bottomRight = qrPosition + qrRotation * new Vector3(forwardOffset, upwardOffset, rightOffset);
+        // Vector3 bottomRight = qrPosition + qrRotation * new Vector3(upwardOffset, forwardOffset, rightOffset);
         vertices = new Vector3[]
         {
             bottomRight,
