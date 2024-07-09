@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
+using System.Linq;
+
 
 public class QRManager : MonoBehaviour
 {
@@ -41,9 +43,9 @@ public class QRManager : MonoBehaviour
         foreach (ARTrackedImage trackedImage in eventArgs.added)
         {
             // SpawnQRPrefab(trackedImage);
-            Debug.Log("Detected zainab! "); 
-             SetupDigitalScreen(); 
-              trackedImages[trackedImage.referenceImage.name] = trackedImage;
+            Debug.Log("Detected zainab with this name  " + trackedImage.referenceImage.name ); 
+            SetupDigitalScreen( trackedImage ); 
+            trackedImages[trackedImage.referenceImage.name] = trackedImage;
         }
 
         foreach (ARTrackedImage trackedImage in eventArgs.updated)
@@ -62,7 +64,7 @@ public class QRManager : MonoBehaviour
 
         {
             Debug.Log("Zainab lets start with the new set up "); 
-            SetupDigitalScreen(); 
+            // SetupDigitalScreen(); 
             // CalculateCenterAndSetupPolygon();
         }
     }
@@ -158,33 +160,39 @@ public class QRManager : MonoBehaviour
     // }
 
 
-void SetupDigitalScreen()
+void SetupDigitalScreen(ARTrackedImage trackedImage)
 {
-    ARTrackedImage image = null;
+    ARTrackedImage image = trackedImage;
 
     // Assuming 'trackedImages' is a dictionary and you know the key, or it only contains one entry
-    if (trackedImages.Count > 0)
-    {
-        image = trackedImages.Values.First(); // Grabbing the first image assuming there's only one
-    }
+    // if (trackedImages.Count > 0)
+    // {
+    //     image = trackedImages["oneSmall"];// Grabbing the first image assuming there's only one
+    // }
+    // image = trackedImages["oneSmall"]; 
+    // image
 
     if (image != null)
     {
         Vector3 position = image.transform.position;
         Quaternion rotation = image.transform.rotation;
+        Quaternion desiredRotation = image.transform.rotation;
+
+        // Adjust the plane's rotation so that its forward vector matches the image's outward normal
+        desiredRotation *= Quaternion.Euler(90, 0, 0);
 
         // Log the position and rotation for debugging
         Debug.Log("Zainab this is now instantiating at position: " + position + " with rotation: " + rotation.eulerAngles);
 
         // Instantiate or update the position and rotation of the digital screen
-        GameObject screen = Instantiate(planePrefab, position, rotation);
-        screen.transform.localScale = new Vector3(1.86f, 0.726f, 0.02f); // Assuming these are the desired dimensions
+        GameObject screen = Instantiate(planePrefab, position, desiredRotation);
+        screen.transform.localScale = new Vector3(0.54f, 0.325f, 0.02f); // Assuming these are the desired dimensions
         ARAnchor anchor = screen.AddComponent<ARAnchor>();
     }
-    else
-    {
-        Debug.LogError("No tracked image available for instantiation.");
-    }
+    // else
+    // {
+    //     Debug.LogError("No tracked image available for instantiation.");
+    // }
 }
 
     private void UpdateQRPrefab(ARTrackedImage trackedImage)
