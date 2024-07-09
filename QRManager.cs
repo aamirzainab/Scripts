@@ -14,6 +14,8 @@ public class QRManager : MonoBehaviour
 
     private Dictionary<string, GameObject> _spawnedPrefabs = new Dictionary<string, GameObject>();
     private List<ARAnchor> _anchors = new List<ARAnchor>();
+    private Dictionary<string, ARTrackedImage> trackedImages = new Dictionary<string, ARTrackedImage>();
+    
     private List<Vector3> _trackedPositions = new List<Vector3>();
 
     private GameObject _centerCube = null;
@@ -38,23 +40,30 @@ public class QRManager : MonoBehaviour
     {
         foreach (ARTrackedImage trackedImage in eventArgs.added)
         {
-            SpawnQRPrefab(trackedImage);
+            // SpawnQRPrefab(trackedImage);
+            Debug.Log("Detected zainab! "); 
+             SetupDigitalScreen(); 
+              trackedImages[trackedImage.referenceImage.name] = trackedImage;
         }
 
         foreach (ARTrackedImage trackedImage in eventArgs.updated)
         {
             UpdateQRPrefab(trackedImage);
+             trackedImages[trackedImage.referenceImage.name] = trackedImage;
         }
 
         foreach (ARTrackedImage trackedImage in eventArgs.removed)
         {
             RemoveQRPrefab(trackedImage);
+              trackedImages.Remove(trackedImage.referenceImage.name);
         }
 
-        if (_anchors.Count == 3) 
+        if (_anchors.Count == 4) 
 
         {
-            CalculateCenterAndSetupPolygon();
+            Debug.Log("Zainab lets start with the new set up "); 
+            SetupDigitalScreen(); 
+            // CalculateCenterAndSetupPolygon();
         }
     }
 
@@ -62,82 +71,122 @@ public class QRManager : MonoBehaviour
     {
         Vector3 position = trackedImage.transform.position;
         Quaternion rotation = trackedImage.transform.rotation;
-        Debug.Log("Zainab Initial Position: " + position + ", Initial Rotation: " + rotation.eulerAngles);
+        Debug.Log("Zainab Initial Position: " + position + "\nZainab Initial Rotation: " + rotation.eulerAngles);
 
         if (!_spawnedPrefabs.ContainsKey(trackedImage.referenceImage.name))
         {
             GameObject qrPrefab = Instantiate(qrCodePrefab, position, rotation);
             _spawnedPrefabs[trackedImage.referenceImage.name] = qrPrefab;
-            float width = 1.86f;            
-            float height = 0.726f;     
+            float width = 1.7f;            
+            // float height = 0.726f;     
             // 32 inches forward, 29.5 - height to bottom right,  34 inches right 
-            float forward = 0.818f; // 0.818
-            float upward =  1.1938f;  // 1.1938
-            float right = width /2.0f ;  
+            float forward = 1.1f; // 0.818
+            float upward =  1.1f; // 1.1936 
+            float right = width / 2.0f ;  
 
             List<ARRaycastHit> hits = new List<ARRaycastHit>(); 
             Vector3 raycastDirection = Vector3.down;
 
-            if (trackedImage.referenceImage.name == "one")
+            if (trackedImage.referenceImage.name == "two" || trackedImage.referenceImage.name == "one"  )
             {
                     Vector3 originalSize = planePrefab.GetComponent<BoxCollider>().size;
-                    Debug.Log("Zainab Original Size: " + originalSize);
+                    SetARWorldOrigin();
 
-                 if (raycastManager.Raycast(position + Vector3.up * 0.1f, hits, TrackableType.Planes)) {
-                    // Debug.Log("Zainab did you enter this condition"); 
-
+                 if (raycastManager.Raycast(position + Vector3.up * 0.01f, hits, TrackableType.Planes)) {
                     ARRaycastHit hit = hits[0];
-                    
-                    Vector3 forwardOffset = rotation * Vector3.forward * 1.8f; // 1.8 meters forward
-                    Vector3 upwardOffset = rotation * Vector3.up * 0.8f; // 0.8 meters up
 
-                    // Position of the plane prefab should take into account these offsets
-                    Vector3 planePosition = hit.pose.position + forwardOffset + upwardOffset;
 
-                    Quaternion flatRotation = Quaternion.LookRotation(Vector3.forward, hit.pose.up);
 
+                    Vector3 forwardOffset = Vector3.forward * forward ;  
+                    Vector3 upwardOffset =  Vector3.up * upward ; 
+                    Vector3 rightOffset =   Vector3.right * right ; 
+                    Debug.DrawRay(hit.pose.position, forwardOffset, Color.blue, 5f);
+                    Debug.DrawRay(hit.pose.position, upwardOffset, Color.green, 5f);
+                    Debug.DrawRay(hit.pose.position, rightOffset, Color.red, 5f);
+                    Debug.DrawRay(hit.pose.position, hit.pose.up * 2, Color.magenta, 5f);
+                    Vector3 planePosition = hit.pose.position + forwardOffset + upwardOffset + rightOffset;
+                    Quaternion flatRotation = Quaternion.LookRotation(Vector3.forward, Vector3.up);
 
                     GameObject planePrefabInstance = Instantiate(planePrefab, planePosition, flatRotation);
-                    planePrefabInstance.transform.localScale = new Vector3(1.86f, 0.726f, 0.02f); 
+                    planePrefabInstance.transform.localScale = new Vector3(1.7f, 0.71f, 0.02f); 
                     ARAnchor anchor = planePrefabInstance.AddComponent<ARAnchor>();
                     _anchors.Add(anchor);
                     PolygonDrawer polygonDrawer = GetComponent<PolygonDrawer>();
                     if (polygonDrawer != null)
                     {
-                        // Debug.Log("Nanabooboo"); 
-                        polygonDrawer.InitializeGizmo(planePrefabInstance); 
-                        //  polygonDrawer.SetupPlanePrefab(position, uprightRotation, planePrefabInstance);
-                        // polygonDrawer.SetupPolygon(position, uprightRotation); // Adjust arguments if necessary for your setup
+                        polygonDrawer.InitializeObjects(planePrefabInstance); 
                     }
 
                  }
-
-                // Quaternion uprightRotation = Quaternion.Euler(90, 0, 0) * rotation;
-                // // Vector3 centerPosition = position + new Vector3(forward, upward, 0);
-                // Vector3 centerPosition = position + rotation * new Vector3(forward, upward, right);
-
-                
-                // Debug.Log("Zainab Upright Rotation: " + uprightRotation.eulerAngles);
-                // Debug.Log("Zainab Center Position for Plane: " + centerPosition);
-                // Debug.Log("Zainab this is the centerPosition being used to move the cube " + centerPosition);
-                // Quaternion finalRotation = Quaternion.Euler(0, rotation.eulerAngles.y, 0); // This keeps the rotation around the Y-axis but resets others.
-                // Debug.Log("Zainab Final Rotation: " + finalRotation);
-                // GameObject planePrefabInstance = Instantiate(planePrefab, centerPosition, finalRotation);
-                // planePrefabInstance.transform.localScale = new Vector3(width, height, 0.02f);
-                // // planePrefabInstance.transform.SetParent(qrPrefab.transform, false); // not sure about this 
-                // ARAnchor anchor = planePrefabInstance.AddComponent<ARAnchor>();
-                // _anchors.Add(anchor);
-                // Debug.Log("Zainab Anchor position at creation: " + position + " for " + trackedImage.referenceImage.name);
-                // PolygonDrawer polygonDrawer = GetComponent<PolygonDrawer>();
-                // if (polygonDrawer != null)
-                // {
-                //     Debug.Log("Nanabooboo"); 
-                //     //  polygonDrawer.SetupPlanePrefab(position, uprightRotation, planePrefabInstance);
-                //     // polygonDrawer.SetupPolygon(position, uprightRotation); // Adjust arguments if necessary for your setup
-                // }
             }
         }
     }
+    // void SetupDigitalScreen()
+    // {
+    //     Vector3 averagePosition = Vector3.zero;
+    //     Quaternion averageRotation = Quaternion.identity;
+    //     int count = 0;
+
+    //     foreach (var image in trackedImages.Values)
+    //         {
+    //             // averagePosition += image.transform.position;
+    //             averagePosition = image.transform.position; 
+    //             averageRotation = image.transform.rotation; 
+    //         //     if (count == 0)
+    //         //     {
+    //         //         averageRotation = image.transform.rotation; // Start with the first rotation
+    //         //     }
+    //         //     else
+    //         //     {
+    //         //         float step = 1.0f / (count + 1);
+    //         //         averageRotation = Quaternion.Slerp(averageRotation, image.transform.rotation, step);
+    //         //     }
+    //         //     count++;
+    //         // }
+
+    //         // if (count > 0)
+    //         // {
+    //         //     averagePosition /= count;
+    //         // }
+    //         }
+
+    //     // Instantiate or update the position and rotation of the digital screen
+    //     Debug.Log("Zainab this is now instantiating  " ); 
+    //     GameObject screen = Instantiate(planePrefab, averagePosition, averageRotation);
+    //     screen.transform.localScale = new Vector3(1.86f, 0.726f, 0.02f); // assuming these are the desired dimensions
+    //     ARAnchor anchor = screen.AddComponent<ARAnchor>();
+    // }
+
+
+void SetupDigitalScreen()
+{
+    ARTrackedImage image = null;
+
+    // Assuming 'trackedImages' is a dictionary and you know the key, or it only contains one entry
+    if (trackedImages.Count > 0)
+    {
+        image = trackedImages.Values.First(); // Grabbing the first image assuming there's only one
+    }
+
+    if (image != null)
+    {
+        Vector3 position = image.transform.position;
+        Quaternion rotation = image.transform.rotation;
+
+        // Log the position and rotation for debugging
+        Debug.Log("Zainab this is now instantiating at position: " + position + " with rotation: " + rotation.eulerAngles);
+
+        // Instantiate or update the position and rotation of the digital screen
+        GameObject screen = Instantiate(planePrefab, position, rotation);
+        screen.transform.localScale = new Vector3(1.86f, 0.726f, 0.02f); // Assuming these are the desired dimensions
+        ARAnchor anchor = screen.AddComponent<ARAnchor>();
+    }
+    else
+    {
+        Debug.LogError("No tracked image available for instantiation.");
+    }
+}
+
     private void UpdateQRPrefab(ARTrackedImage trackedImage)
     {
         if (_spawnedPrefabs.ContainsKey(trackedImage.referenceImage.name))
@@ -208,14 +257,14 @@ public class QRManager : MonoBehaviour
     }
 
 
-    private void SetARWorldOrigin(Vector3 newOrigin)
+    private void SetARWorldOrigin()
     {
         ARSessionOrigin arSessionOrigin = FindObjectOfType<ARSessionOrigin>();
         if (arSessionOrigin != null)
         {
             // Reset world origin to the new calculated center position
-            arSessionOrigin.MakeContentAppearAt(arSessionOrigin.transform, newOrigin, Quaternion.identity);
-            Debug.Log("World origin set to new center position.");
+            // arSessionOrigin.MakeContentAppearAt(arSessionOrigin.transform, newOrigin, Quaternion.identity);
+            arSessionOrigin.transform.rotation = Quaternion.identity;
         }
     }
 }
