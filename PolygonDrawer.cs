@@ -67,9 +67,10 @@ public class PolygonDrawer : MonoBehaviour
     //     lastRotation = centralObject.transform.rotation;
     // }
 
-    public void SetupPolygon(Vector3 qrPosition, Quaternion qrRotation)
+    public void SetupPolygon(Vector3 qrPosition, Quaternion qrRotation,GameObject planeObject)
     {
         // SetupPlanePrefab(qrPosition, qrRotation);
+        InitializeGizmo(planeObject);
         lastPosition = centralObject.transform.position;
         lastRotation = centralObject.transform.rotation;
     }
@@ -111,13 +112,13 @@ public class PolygonDrawer : MonoBehaviour
         InitializePlaneObject();
         DrawPolygon();
         PositionCentralObject();
-        InitializeGizmo();
+        // InitializeGizmo();
     }
-    private void InitializeGizmo()
+    public void InitializeGizmo(GameObject planeObject)
     {
-        if (transformHandle != null && centralObject != null)
+        if (transformHandle != null && planeObject != null)
         {
-            transformHandle.target = centralObject.transform;
+            transformHandle.target = planeObject.transform;
             transformHandle.gameObject.SetActive(true);
         }
     }
