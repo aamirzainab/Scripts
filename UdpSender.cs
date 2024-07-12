@@ -2,20 +2,26 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using UnityEngine;
+using System.Collections.Generic;
+using UnityEngine.XR.ARFoundation;
+using UnityEngine.XR.ARSubsystems;
+using System.Linq;
 
 public class UdpSender : MonoBehaviour
 {
     private UdpClient udpClient;
-    public string host = "127.0.0.1"; // The IP address of the receiver
-    public int port = 9000; // The port on which data will be sent
-    public float sendInterval = 0.1f; // Time interval in seconds between sends
+    public string host = "130.245.4.133"; //  IP address of the receiver
+    public int port = 8081; //  port on which data will be sent
+    public float sendInterval = 0.1f; //  interval in seconds between sends
+    public Camera arCamera;  
 
     private float timeSinceLastSend = 0.0f;
 
     void Start()
     {
-        udpClient = new UdpClient(); // Initialize the UDP client
-        Input.gyro.enabled = true; // Enable the gyroscope
+        udpClient = new UdpClient(); 
+        Debug.Log("did ya alrady come here zainab "); 
+        Input.gyro.enabled = true; 
     }
 
     void Update()
@@ -24,26 +30,39 @@ public class UdpSender : MonoBehaviour
 
         if (timeSinceLastSend >= sendInterval)
         {
-            SendGyroData();
+            SendCameraData();
             timeSinceLastSend = 0;
         }
     }
 
-    void SendGyroData()
+public void SendCameraData()
     {
-        Quaternion attitude = Input.gyro.attitude;
-        Vector3 rotationRate = Input.gyro.rotationRate;
+        if (arCamera != null)
+        {
+            Vector3 position = arCamera.transform.position;
+            Quaternion rotation = arCamera.transform.rotation;
 
-        string message = $"{attitude.x},{attitude.y},{attitude.z},{attitude.w},{rotationRate.x},{rotationRate.y},{rotationRate.z}";
-        byte[] bytesToSend = Encoding.ASCII.GetBytes(message); // Convert string to byte array
-
-        udpClient.SendAsync(bytesToSend, bytesToSend.Length, host, port); // Send the byte array to the host
-        Debug.Log("Sent Gyro Data: " + message);
+            string message = $"{position.x},{position.y},{position.z},{rotation.x},{rotation.y},{rotation.z},{rotation.w}";
+            byte[] bytesToSend = Encoding.ASCII.GetBytes(message);
+            udpClient.SendAsync(bytesToSend, bytesToSend.Length, host, port); 
+            Debug.Log("Sent AR Camera Data: " + message);
+        }
     }
 
+    public void sendSpawnData(string name)
+    {
+            Vector3 position = arCamera.transform.position;
+            Quaternion rotation = arCamera.transform.rotation;
+
+        // string message = $"SPAWN {name}: {attitude.x},{attitude.y},{attitude.z},{attitude.w},{rotationRate.x},{rotationRate.y},{rotationRate.z}";
+        string message = $"SPAWN {name}:{position.x},{position.y},{position.z},{rotation.x},{rotation.y},{rotation.z},{rotation.w}";
+        byte[] bytesToSend = Encoding.ASCII.GetBytes(message);
+        udpClient.SendAsync(bytesToSend, bytesToSend.Length, host, port); 
+        Debug.Log("Sent Spawn Data Zainab: " + message);
+    }
     void OnDestroy()
     {
-        udpClient.Close(); // Close the UDP client when the object is destroyed
-        Input.gyro.enabled = false; // Disable the gyroscope when not needed
+        udpClient.Close(); 
+        Input.gyro.enabled = false; 
     }
 }

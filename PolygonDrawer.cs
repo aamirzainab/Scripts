@@ -84,9 +84,7 @@ public class PolygonDrawer : MonoBehaviour
         {
             transformHandle.gameObject.SetActive(false);
         }
-        // if (centralObject != null)
-        //     centralObject.SetActive(false);
-        StartCoroutine(SnapBorderToScreenPlane());
+        // StartCoroutine(SnapBorderToScreenPlane());
     }
 
     IEnumerator SnapBorderToScreenPlane()
