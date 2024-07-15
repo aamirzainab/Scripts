@@ -15,11 +15,13 @@ public class PolygonDrawer : MonoBehaviour
     public Vector3[] vertices;
     private GameObject planeObjectScript, raycastLine;
     public RuntimeTransformHandle transformHandle;
+    public LineRenderer lineRenderer;
 
     private Vector3 lastPosition;
     private Quaternion lastRotation;
     private float lastTapTime = 0;  
     private const float doubleTapDelay = 0.3f;  
+
 
     void Update()
     {
@@ -47,6 +49,13 @@ public class PolygonDrawer : MonoBehaviour
     {            
         planeObjectScript = planeObject;
         planeObjectScript.tag = "Selectable" ; 
+
+        lineRenderer.startWidth = 0.01f;
+        lineRenderer.endWidth = 0.01f;
+        lineRenderer.positionCount = 2;
+        lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
+        lineRenderer.startColor = Color.red;
+        lineRenderer.endColor = Color.red;
         InitializeGizmo();
     }
     public void InitializeGizmo()
@@ -84,7 +93,7 @@ public class PolygonDrawer : MonoBehaviour
         {
             transformHandle.gameObject.SetActive(false);
         }
-        // StartCoroutine(SnapBorderToScreenPlane());
+        StartCoroutine(SnapBorderToScreenPlane());
     }
 
     IEnumerator SnapBorderToScreenPlane()
@@ -93,53 +102,53 @@ public class PolygonDrawer : MonoBehaviour
 
         List<ARRaycastHit> hits = new List<ARRaycastHit>();
         Vector3 screenCenter = new Vector3(Screen.width / 2, Screen.height / 2); 
+        Debug.Log("screencenter " + screenCenter); 
         Vector3 planePosition = Vector3.zero;
         Quaternion planeRotation = Quaternion.identity;
+        Ray ray = arCamera.ViewportPointToRay(screenCenter);
+        RaycastHit raycastHit;
+        float rayLength = 10.0f; 
+        // VisualizeRaycast(ray.origin, ray.direction * rayLength);
 
-        if (raycastManager.Raycast(screenCenter, hits, TrackableType.Planes))
-        {
-            foreach (var hit in hits)
-            {
-                ARPlane plane = planeManager.GetPlane(hit.trackableId);
-                // Debug.Log("Zainab did you get here? "); 
-                if (plane.alignment == PlaneAlignment.Vertical && 
-                    plane.size.x <= 1.0f && plane.size.y <= 0.5f)
-                {
-                    // Use hit pose for position and rotation
-                    // Debug.Log("Zainab did you get here? "); 
-                    planePosition = hit.pose.position;
-                    planeRotation = hit.pose.rotation;
+        lineRenderer.SetPosition(0, ray.origin);
+        lineRenderer.SetPosition(1, ray.origin + ray.direction * rayLength);
 
-                    // planeRotation = Quaternion.Euler(0, planeRotation.eulerAngles.y, 0);
-                    var renderer = plane.GetComponent<MeshRenderer>();
-                    Debug.Log("Zainab this is the plane " + plane); 
-                    // if (renderer != null)
-                    // {
-                    //     Debug.Log("Zainab did ya come here?");
-                    //     renderer.material.color = Color.red;  // Change color to red to highlight
-                    // }
+        
 
-                    // Instantiate or move your plane prefab
-                    if (planeObjectScript != null)
-                    {
-                        planeObjectScript.transform.position = planePosition;
-                        // centralObject.transform.rotation = planeRotation;
-                        Debug.Log("Zainab Plane snapped to vertical surface at: " + planePosition);
-                    }
-                    Vector3 start = arCamera.transform.position;
-                    start = planeObjectScript.transform.position ; 
-                    Vector3 end = hit.pose.position;
-                    VisualizeRaycast(start, end);
+        // if (raycastManager.Raycast(screenCenter, hits, TrackableType.Planes))
+        // {
+        //     foreach (var hit in hits)
+        //     {
+        //         ARPlane plane = planeManager.GetPlane(hit.trackableId);
+        //         // Debug.Log("Zainab did you get here? "); 
+        //         if (plane.alignment == PlaneAlignment.Vertical)
+        //             // plane.size.x <= 1.0f && plane.size.y <= 0.5f)
+        //         {
+        //             planePosition = hit.pose.position;
+        //             planeRotation = hit.pose.rotation;
+        //             var renderer = plane.GetComponent<MeshRenderer>();
+        //             Debug.Log("Zainab this is the plane " + plane); 
 
-                    // ARAnchor anchor = planePrefab.GetComponent<ARAnchor>() ?? planePrefab.AddComponent<ARAnchor>();
-                    break; // Break if you only want to snap to the first found vertical plane
-                }
-            }
-        }
-        else
-        {
-            Debug.Log("Zainab No suitable vertical plane detected.");
-        }
+
+        //             // Instantiate or move your plane prefab
+        //             // if (planeObjectScript != null)
+        //             // {
+        //             //     planeObjectScript.transform.position = planePosition;
+        //             //     // centralObject.transform.rotation = planeRotation;
+        //             //     Debug.Log("Zainab Plane snapped to vertical surface at: " + planePosition);
+        //             // }
+        //             // Vector3 start = screenCenter;
+        //             // start = planeObjectScript.transform.position ; 
+        //             // Vector3 end = hit.pose.position;
+        //             // arCamera.ViewportPointToRay(screenCenter); 
+        //             break; 
+        //         }
+        //     }
+        // }
+        // else
+        // {
+        //     Debug.Log("Zainab No suitable vertical plane detected.");
+        // }
     }
 
     void VisualizeRaycast(Vector3 start, Vector3 end)

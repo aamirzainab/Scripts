@@ -120,7 +120,7 @@ public class QRManager : MonoBehaviour
             Debug.Log("Zainab: Instantiating screen at average rotation: " + desiredRotation );
             screen = Instantiate(planePrefab, newPosition, desiredRotation);
 
-            screen.transform.localScale = new Vector3(1.7f, 0.71f, 0.02f);  // Assuming these are the dimensions of the screen
+            screen.transform.localScale = new Vector3(1.86f, 0.726f, 0.02f);  // Assuming these are the dimensions of the screen
             PolygonDrawer polygonDrawer = GetComponent<PolygonDrawer>();
             if (polygonDrawer != null)
             {
