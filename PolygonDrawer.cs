@@ -23,11 +23,43 @@ public class PolygonDrawer : MonoBehaviour
     private const float doubleTapDelay = 0.3f;  
 
 
-    void Update()
+ void Start()
+{
+    // Start the repeated sending of raycast data every 1 second
+    InvokeRepeating("SendRayCastData", 0, 1.0f);  // Starts immediately, repeats every 1 second
+}
+
+void Update()
+{
+    HandleTouches();
+}
+
+void SendRayCastData()
+{
+    Ray ray = arCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
+    float rayLength = 10.0f;
+
+    // Set up the line renderer
+    lineRenderer.startWidth = 0.01f;
+    lineRenderer.endWidth = 0.01f;
+    lineRenderer.positionCount = 2;
+    lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
+    lineRenderer.startColor = Color.red;
+    lineRenderer.endColor = Color.red;
+    lineRenderer.SetPosition(0, ray.origin);
+    lineRenderer.SetPosition(1, ray.origin + ray.direction * rayLength);
+
+    // Calculate endpoint and rotation
+    Vector3 endpoint = ray.origin + ray.direction * rayLength;
+    Quaternion rotation = Quaternion.LookRotation(ray.direction);
+     UdpSender udpSender = GetComponent<UdpSender>();
+
+    // Send the data
+    if (udpSender != null)
     {
-        HandleTouches();
-        // UpdateTransformations();
+        udpSender.sendRayCastData(endpoint, rotation);
     }
+}
 
     void HandleTouches()
     {
@@ -50,12 +82,7 @@ public class PolygonDrawer : MonoBehaviour
         planeObjectScript = planeObject;
         planeObjectScript.tag = "Selectable" ; 
 
-        lineRenderer.startWidth = 0.01f;
-        lineRenderer.endWidth = 0.01f;
-        lineRenderer.positionCount = 2;
-        lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
-        lineRenderer.startColor = Color.red;
-        lineRenderer.endColor = Color.red;
+
         InitializeGizmo();
     }
     public void InitializeGizmo()
@@ -93,25 +120,36 @@ public class PolygonDrawer : MonoBehaviour
         {
             transformHandle.gameObject.SetActive(false);
         }
-        StartCoroutine(SnapBorderToScreenPlane());
+        // StartCoroutine(SnapBorderToScreenPlane());
     }
 
-    IEnumerator SnapBorderToScreenPlane()
-    {
-        yield return new WaitForEndOfFrame(); 
+    // IEnumerator SnapBorderToScreenPlane()
+    // {
+        // yield return new WaitForEndOfFrame(); 
 
-        List<ARRaycastHit> hits = new List<ARRaycastHit>();
-        Vector3 screenCenter = new Vector3(Screen.width / 2, Screen.height / 2); 
-        Debug.Log("screencenter " + screenCenter); 
-        Vector3 planePosition = Vector3.zero;
-        Quaternion planeRotation = Quaternion.identity;
-        Ray ray = arCamera.ViewportPointToRay(screenCenter);
-        RaycastHit raycastHit;
-        float rayLength = 10.0f; 
-        // VisualizeRaycast(ray.origin, ray.direction * rayLength);
+        // List<ARRaycastHit> hits = new List<ARRaycastHit>();
+        // lineRenderer.startWidth = 0.01f;
+        // lineRenderer.endWidth = 0.01f;
+        // lineRenderer.positionCount = 2;
+        // lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
+        // lineRenderer.startColor = Color.red;
+        // lineRenderer.endColor = Color.red;
+        // Debug.Log("this is screen width " + Screen.width );
 
-        lineRenderer.SetPosition(0, ray.origin);
-        lineRenderer.SetPosition(1, ray.origin + ray.direction * rayLength);
+        // Debug.Log("this is screen height  " + Screen.height );
+        // Vector3 screenCenter = new Vector3(Screen.width / 2, Screen.height / 2,0); 
+        // Debug.Log("screencenter " + screenCenter); 
+        // Vector3 planePosition = Vector3.zero;
+        // Quaternion planeRotation = Quaternion.identity;
+        // // Ray ray = arCamera.ViewportPointToRay(screenCenter);
+        //   Ray ray =arCamera.ViewportPointToRay(new Vector3(0.5f,0.5f,0));
+        // RaycastHit raycastHit;
+        // float rayLength = 10.0f; 
+        // Debug.Log("Thsi is ray " + ray ); 
+        // // VisualizeRaycast(ray.origin, ray.direction * rayLength);
+
+        // lineRenderer.SetPosition(0, ray.origin);
+        // lineRenderer.SetPosition(1, ray.origin + ray.direction * rayLength);
 
         
 
@@ -149,7 +187,7 @@ public class PolygonDrawer : MonoBehaviour
         // {
         //     Debug.Log("Zainab No suitable vertical plane detected.");
         // }
-    }
+    // }
 
     void VisualizeRaycast(Vector3 start, Vector3 end)
     {

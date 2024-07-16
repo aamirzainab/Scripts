@@ -12,6 +12,7 @@ public class QRManager : MonoBehaviour
     public GameObject qrCodePrefab;
     public GameObject cubePrefab;  
     public GameObject planePrefab;  
+    private AROcclusionManager _occlusionManager;
     private ARAnchorManager _anchorManager;
     [SerializeField] private ARRaycastManager raycastManager; 
 
@@ -28,6 +29,7 @@ public class QRManager : MonoBehaviour
     {
         _trackedImageManager = FindObjectOfType<ARTrackedImageManager>();
         _anchorManager = FindObjectOfType<ARAnchorManager>();
+        _occlusionManager = FindObjectOfType<AROcclusionManager>()
     }
 
     private void OnEnable()

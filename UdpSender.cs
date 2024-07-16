@@ -14,7 +14,6 @@ public class UdpSender : MonoBehaviour
     public int port = 8081; //  port on which data will be sent
     public float sendInterval = 0.1f; //  interval in seconds between sends
     public Camera arCamera;  
-
     private float timeSinceLastSend = 0.0f;
 
     void Start()
@@ -59,6 +58,17 @@ public void SendCameraData()
         byte[] bytesToSend = Encoding.ASCII.GetBytes(message);
         udpClient.SendAsync(bytesToSend, bytesToSend.Length, host, port); 
         Debug.Log("Sent Spawn Data Zainab: " + message);
+    }
+    public void sendRayCastData(Vector3 position, Quaternion rotation)
+    {
+            // Vector3 position = lineRenderer.transform.position;
+            // Quaternion rotation = arCamera.transform.rotation;
+
+        // string message = $"SPAWN {name}: {attitude.x},{attitude.y},{attitude.z},{attitude.w},{rotationRate.x},{rotationRate.y},{rotationRate.z}";
+        string message = $"RAYCAST {name}:{position.x},{position.y},{position.z},{rotation.x},{rotation.y},{rotation.z},{rotation.w}";
+        byte[] bytesToSend = Encoding.ASCII.GetBytes(message);
+        udpClient.SendAsync(bytesToSend, bytesToSend.Length, host, port); 
+        Debug.Log("Sent Raycast Data Zainab: " + message);
     }
     void OnDestroy()
     {
