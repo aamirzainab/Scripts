@@ -15,7 +15,7 @@ public class PolygonDrawer : MonoBehaviour
     public Vector3[] vertices;
     private GameObject planeObjectScript, raycastLine;
     public RuntimeTransformHandle transformHandle;
-    public LineRenderer lineRenderer;
+    // public LineRenderer lineRenderer;
 
     private Vector3 lastPosition;
     private Quaternion lastRotation;
@@ -26,7 +26,7 @@ public class PolygonDrawer : MonoBehaviour
  void Start()
 {
     // Start the repeated sending of raycast data every 1 second
-    InvokeRepeating("SendRayCastData", 0, 1.0f);  // Starts immediately, repeats every 1 second
+    // InvokeRepeating("SendRayCastData", 0, 0.50f);  // Starts immediately, repeats every 1 second
 }
 
 void Update()
@@ -40,14 +40,14 @@ void SendRayCastData()
     float rayLength = 10.0f;
 
     // Set up the line renderer
-    lineRenderer.startWidth = 0.01f;
-    lineRenderer.endWidth = 0.01f;
-    lineRenderer.positionCount = 2;
-    lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
-    lineRenderer.startColor = Color.red;
-    lineRenderer.endColor = Color.red;
-    lineRenderer.SetPosition(0, ray.origin);
-    lineRenderer.SetPosition(1, ray.origin + ray.direction * rayLength);
+    // lineRenderer.startWidth = 0.000001f;
+    // lineRenderer.endWidth = 0.00001f;
+    // lineRenderer.positionCount = 2;
+    // lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
+    // lineRenderer.startColor = Color.red;
+    // lineRenderer.endColor = Color.red;
+    // lineRenderer.SetPosition(0, ray.origin);
+    // lineRenderer.SetPosition(1, ray.origin + ray.direction * rayLength);
 
     // Calculate endpoint and rotation
     Vector3 endpoint = ray.origin + ray.direction * rayLength;

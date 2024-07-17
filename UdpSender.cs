@@ -67,8 +67,8 @@ public void SendCameraData()
         // string message = $"SPAWN {name}: {attitude.x},{attitude.y},{attitude.z},{attitude.w},{rotationRate.x},{rotationRate.y},{rotationRate.z}";
         string message = $"RAYCAST {name}:{position.x},{position.y},{position.z},{rotation.x},{rotation.y},{rotation.z},{rotation.w}";
         byte[] bytesToSend = Encoding.ASCII.GetBytes(message);
-        udpClient.SendAsync(bytesToSend, bytesToSend.Length, host, port); 
-        Debug.Log("Sent Raycast Data Zainab: " + message);
+        // udpClient.SendAsync(bytesToSend, bytesToSend.Length, host, port); 
+        // Debug.Log("Sent Raycast Data Zainab: " + message);
     }
     void OnDestroy()
     {
