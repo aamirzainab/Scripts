@@ -59,17 +59,29 @@ public void SendCameraData()
         udpClient.SendAsync(bytesToSend, bytesToSend.Length, host, port); 
         Debug.Log("Sent Spawn Data Zainab: " + message);
     }
-    public void sendRayCastData(Vector3 position, Quaternion rotation)
-    {
-            // Vector3 position = lineRenderer.transform.position;
-            // Quaternion rotation = arCamera.transform.rotation;
+    // public void sendRayCastData(Vector3 position, Quaternion rotation)
+    // {
+    //         // Vector3 position = lineRenderer.transform.position;
+    //         // Quaternion rotation = arCamera.transform.rotation;
 
-        // string message = $"SPAWN {name}: {attitude.x},{attitude.y},{attitude.z},{attitude.w},{rotationRate.x},{rotationRate.y},{rotationRate.z}";
-        string message = $"RAYCAST {name}:{position.x},{position.y},{position.z},{rotation.x},{rotation.y},{rotation.z},{rotation.w}";
-        byte[] bytesToSend = Encoding.ASCII.GetBytes(message);
-        // udpClient.SendAsync(bytesToSend, bytesToSend.Length, host, port); 
-        // Debug.Log("Sent Raycast Data Zainab: " + message);
-    }
+    //     // string message = $"SPAWN {name}: {attitude.x},{attitude.y},{attitude.z},{attitude.w},{rotationRate.x},{rotationRate.y},{rotationRate.z}";
+    //     string message = $"RAYCAST {name}:{position.x},{position.y},{position.z},{rotation.x},{rotation.y},{rotation.z},{rotation.w}";
+    //     byte[] bytesToSend = Encoding.ASCII.GetBytes(message);
+    //     // udpClient.SendAsync(bytesToSend, bytesToSend.Length, host, port); 
+    //     // Debug.Log("Sent Raycast Data Zainab: " + message);
+    // }
+
+    public void sendCastData(Vector2 screenPosition)
+{
+    // Serialize the screen position into a string message
+    string message = $"CAST {screenPosition.x},{screenPosition.y}";
+    byte[] bytesToSend = Encoding.ASCII.GetBytes(message);
+
+    // Assuming udpClient, host, and port are defined similarly to sendSpawnData
+    udpClient.SendAsync(bytesToSend, bytesToSend.Length, host, port);
+    Debug.Log("Sent Cast Data: " + message);
+}
+
     void OnDestroy()
     {
         udpClient.Close(); 
