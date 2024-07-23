@@ -192,6 +192,13 @@ public class QRManager : MonoBehaviour
 
         float widthInMeters = 73 / 39.3701f;  // Convert width from inches to meters
         float heightInMeters = 28 / 39.3701f;  // Convert height from inches to meters
+        float adjustment = 10.5f / 100f;
+        float forwardAdjustment = 0.1f;
+
+        // Adjust pointOnPlane to be the top-left corner shifted up and left by 10.5 cm
+        // pointOnPlane += -right * adjustment + image_up * adjustment;
+        pointOnPlane += -right * adjustment + image_up * adjustment + normal * forwardAdjustment;
+
 
         // Since pointOnPlane is the top-left corner, calculate other corners based on this
         Vector3 topRight = pointOnPlane + right * widthInMeters;
@@ -237,6 +244,8 @@ public class QRManager : MonoBehaviour
             float widthInMeters = 73 / 39.3701f; // Convert width from inches to meters
             float heightInMeters = 28 / 39.3701f; // Convert height from inches to meters
 
+            // float adjustment = 10.5f / 100f;
+
             // Calculate half dimensions to find corners from the center
             float halfWidth = widthInMeters / 2;
             float halfHeight = heightInMeters / 2;
@@ -279,6 +288,7 @@ public class QRManager : MonoBehaviour
             Vector3 rightVector = (topRight.transform.position - topLeft.transform.position).normalized;
             // rightVector = (topLeft.transform.position - topRight.transform.position).normalized;
             Vector3 downVector = (bottomLeft.transform.position - topLeft.transform.position).normalized;
+            // Vector3 downVector = (topLeft.transform.position - bottomLeft.transform.position).normalized;
 
             // Now projecting the relative position onto the right and down vectors
             float xProjected = Vector3.Project(relativePosition, rightVector).magnitude;
@@ -290,17 +300,33 @@ public class QRManager : MonoBehaviour
 
             float normalizedX = xProjected / Vector3.Distance(topLeft.transform.position, topRight.transform.position);
             float normalizedY = yProjected / Vector3.Distance(topLeft.transform.position, bottomLeft.transform.position);
+            float adjustedX = 1.0f - normalizedX;
+            float adjustedY = normalizedY;
             // Checking that they fall on our screen, otherwise we don't send the coordinates 
-            if (0 <= normalizedX && normalizedX <= 1.0f && 0 <= normalizedY && normalizedY <= 1.0f)
+            // if (0 <= normalizedX && normalizedX <= 1.0f && 0 <= normalizedY && normalizedY <= 1.0f)
+            // {
+            //     screenPosition = new Vector2(normalizedX, normalizedY);
+            //     lineRenderer.SetPositions(new Vector3[] { ray.origin, intersectionPoint });
+            //     Debug.Log($"Screen coordinates: {screenPosition}");
+
+            //     UdpSender udpSender = GetComponent<UdpSender>();
+            //     if (udpSender != null)
+            //     {
+            //         udpSender.sendCastData(screenPosition); 
+            //     }
+            // }
+                if (0 <= adjustedX && adjustedX <= 1.0f && 0 <= adjustedY && adjustedY <= 1.0f)
             {
-                screenPosition = new Vector2(normalizedX, normalizedY);
+                screenPosition = new Vector2(adjustedX, adjustedY);
                 lineRenderer.SetPositions(new Vector3[] { ray.origin, intersectionPoint });
                 Debug.Log($"Screen coordinates: {screenPosition}");
 
                 UdpSender udpSender = GetComponent<UdpSender>();
                 if (udpSender != null)
                 {
-                    udpSender.sendCastData(screenPosition); 
+                    udpSender.SendCastCoordData(screenPosition, ray.origin, ray.direction, arCamera.transform.position, arCamera.transform.rotation);
+                    // udpSender.sendCastData(screenPosition); 
+                    // udpSender.sendRayCastData(ray.origin,ray.direction);
                 }
             }
         }
