@@ -325,13 +325,32 @@ public class QRManager : MonoBehaviour
                 UdpSender udpSender = GetComponent<UdpSender>();
                 if (udpSender != null)
                 {
+                    Vector3 normalizedRotation = NormalizeRotation(arCamera.transform.rotation, topLeft, topRight, bottomLeft);
                     udpSender.SendCastCoordData(screenPosition, ray.origin, ray.direction, arCamera.transform.position, arCamera.transform.rotation);
                     // udpSender.sendCastData(screenPosition); 
                     // udpSender.sendRayCastData(ray.origin,ray.direction);
                 }
             }
-        }
+    
     }
+
+
+    private Vector3 NormalizeRotation(Quaternion cameraRotation, ARAnchor topLeft, ARAnchor topRight, ARAnchor bottomLeft)
+    {
+        // Define relative rotation vectors based on anchor positions
+        Quaternion topRightRelRot = Quaternion.FromToRotation(topLeft.transform.up, topRight.transform.up);
+        Quaternion bottomLeftRelRot = Quaternion.FromToRotation(topLeft.transform.up, bottomLeft.transform.up);
+
+        // Calculate camera's rotation relative to the topLeft anchor's rotation
+        Quaternion relativeCameraRot = Quaternion.Inverse(topLeft.transform.rotation) * cameraRotation;
+
+        // Project camera's rotation onto defined rotation vectors
+        float horizontalRotAmount = Quaternion.Angle(relativeCameraRot, topRightRelRot) / 180.0f; // Normalize to [0, 1] range assuming max angle is 180 degrees
+        float verticalRotAmount = Quaternion.Angle(relativeCameraRot, bottomLeftRelRot) / 180.0f; // Normalize similarly
+
+        return new Vector3(horizontalRotAmount, verticalRotAmount, 0); // Z component can be ignored or used for another rotational measure
+    }
+
     private void UpdateQRPrefab(ARTrackedImage trackedImage)
     {
         if (_spawnedPrefabs.ContainsKey(trackedImage.referenceImage.name))
