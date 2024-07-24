@@ -21,6 +21,7 @@ public class UdpSender : MonoBehaviour
         udpClient = new UdpClient(); 
         Debug.Log("did ya alrady come here zainab "); 
         Input.gyro.enabled = true; 
+        Input.compass.enabled = true;
     }
 
     void Update()

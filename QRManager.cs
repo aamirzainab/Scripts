@@ -266,6 +266,7 @@ public class QRManager : MonoBehaviour
 
     public void DetermineScreenCoordinates()
     {
+        SetARWorldOrigin(); 
         Ray ray = arCamera.ViewportPointToRay(new Vector2(0.5f, 0.5f));  
         if (raycastLine == null)
         {
