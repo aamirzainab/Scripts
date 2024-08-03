@@ -106,6 +106,14 @@ public class UdpSender : MonoBehaviour
         Debug.Log("Sent Combined Data: " + message);
     }
 
+    public void SendScreenRotationData(float angleWithNormal, float angleWithRight, float angleWithDown)
+    {
+        // string message = $"ROTATION {screenRotation.x},{screenRotation.y} {screenRotation.z}";
+        string message = $"ANGLE {angleWithNormal}, {angleWithRight}, {angleWithDown}";
+        byte[] bytesToSend = Encoding.ASCII.GetBytes(message);
+        udpClient.SendAsync(bytesToSend, bytesToSend.Length, host, port);
+        Debug.Log("Sent Rotation Data: " + message);
+    }
     void OnDestroy()
     {
         udpClient.Close(); 

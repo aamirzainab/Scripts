@@ -46,6 +46,7 @@ public class QRManager : MonoBehaviour
     private float lastTapTime = 0;  
     public RuntimeTransformHandle transformHandle;
     private const float doubleTapDelay = 0.3f; 
+    private Vector3 normalToPlane ; 
      bool calibrated = false ; 
 
     private void Awake()
@@ -172,19 +173,12 @@ public class QRManager : MonoBehaviour
             _spawnedPrefabs[trackedImage.referenceImage.name] = qrPrefab;
         }
     }
-// where from line between point1 and point2 is the intersection point, b/w 0-1 means its in b/w p1 and p2!
-    float FindViewportFromIntersection(Vector3 point1, Vector3 point2, Vector3 intersectionPoint)
-    {
-        Vector3 screenLine = point2 - point1; // calculating direction vector 
-        Vector3 intersectionLine = intersectionPoint - point1; //calculating intersection vector
-        Vector3 intersectionLineProjected = Vector3.Project(intersectionLine, screenLine.normalized); //project intersection on direction???
-        float sign = Vector3.Dot(screenLine.normalized, intersectionLineProjected.normalized); // find sign of projection
-        return (intersectionLineProjected.magnitude / screenLine.magnitude) * sign; // calculate final intersection position
-    }
+
 
     void PlacePlaneFromImage(ARTrackedImage img)
     {
         Vector3 normal = img.transform.rotation * Vector3.up;  // Normal to the plane
+        normalToPlane = normal ; 
         Vector3 image_up = img.transform.rotation * Vector3.forward;  // Up direction for the image
         Vector3 pointOnPlane = img.transform.position;  // This is now the top-left corner
 
@@ -193,7 +187,7 @@ public class QRManager : MonoBehaviour
         float widthInMeters = 73 / 39.3701f;  // Convert width from inches to meters
         float heightInMeters = 28 / 39.3701f;  // Convert height from inches to meters
         float adjustment = 10.5f / 100f;
-        float forwardAdjustment = 0.1f;
+        float forwardAdjustment = 0.05f;
 
         // Adjust pointOnPlane to be the top-left corner shifted up and left by 10.5 cm
         // pointOnPlane += -right * adjustment + image_up * adjustment;
@@ -230,6 +224,68 @@ public class QRManager : MonoBehaviour
         }
     }
 
+    public void DetermineScreenCoordinates()
+    {
+        SetARWorldOrigin(); 
+        Ray ray = arCamera.ViewportPointToRay(new Vector2(0.5f, 0.5f));  
+        if (raycastLine == null)
+        {
+            raycastLine = Instantiate(raycastLinePrefab, transform);
+        }
+        var lineRenderer = raycastLine.GetComponent<LineRenderer>();
+        lineRenderer.positionCount = 2;
+        PlaneDisplayData dd = myPlane; 
+        Plane plane = dd._plane;
+        ARAnchor topLeft = dd._topLeft;
+        ARAnchor topRight = dd._topRight;
+        ARAnchor bottomLeft = dd._bottomLeft;
+        ARAnchor bottomRight = dd._bottomRight;
+        if (plane.Raycast(ray, out float enter))
+        {
+            Vector3 intersectionPoint = ray.GetPoint(enter);
+            Vector3 rayDirection = (intersectionPoint - ray.origin).normalized; 
+            //Zainab I'm calculating coordinates relative to top-left corner and finding  the right and down vectors using the corner anchors 
+            Vector3 relativePosition = intersectionPoint - topLeft.transform.position;
+            Vector3 rightVector = (topRight.transform.position - topLeft.transform.position).normalized;
+            Vector3 downVector = (bottomLeft.transform.position - topLeft.transform.position).normalized;
+           
+            // Now projecting the relative position onto the right and down vectors
+            float xProjected = Vector3.Project(relativePosition, rightVector).magnitude;
+            float yProjected = Vector3.Project(relativePosition, downVector).magnitude;
+            // Have to account for direction relative to the top-left origin, accordingly adjust it and find the projected x and y coordinates and normalize them
+            if (Vector3.Dot(relativePosition, rightVector) < 0) xProjected *= -1;
+            if (Vector3.Dot(relativePosition, downVector) < 0) yProjected *= -1;
+
+            float normalizedX = xProjected / Vector3.Distance(topLeft.transform.position, topRight.transform.position);
+            float normalizedY = yProjected / Vector3.Distance(topLeft.transform.position, bottomLeft.transform.position);
+            float adjustedX = 1.0f - normalizedX;
+            float adjustedY = normalizedY;
+
+            Vector3 planeNormal = Vector3.Cross(rightVector, downVector).normalized;
+            float dotProduct = Vector3.Dot(rayDirection, planeNormal);
+            float angle = Mathf.Acos(dotProduct) * Mathf.Rad2Deg; // Converting radians to degrees for easier interpretation
+
+
+            float angleWithNormal = Mathf.Acos(Vector3.Dot(rayDirection, normalToPlane.normalized)) * Mathf.Rad2Deg;
+            float angleWithRight = Mathf.Acos(Vector3.Dot(relativePosition.normalized, rightVector)) * Mathf.Rad2Deg;
+            float angleWithDown = Mathf.Acos(Vector3.Dot(relativePosition.normalized, downVector)) * Mathf.Rad2Deg;
+
+            if (0 <= adjustedX && adjustedX <= 1.0f && 0 <= adjustedY && adjustedY <= 1.0f)
+            {
+                screenPosition = new Vector2(adjustedX, adjustedY);
+                lineRenderer.SetPositions(new Vector3[] { ray.origin, intersectionPoint });
+                Debug.Log($"Screen coordinates: {screenPosition}");
+
+                UdpSender udpSender = GetComponent<UdpSender>();
+                if (udpSender != null)
+                { 
+                    udpSender.SendScreenRotationData(angle,angleWithNormal,angleWithDown); 
+                    udpSender.SendCastCoordData(screenPosition, ray.origin, ray.direction, arCamera.transform.position, arCamera.transform.rotation);
+                }
+            }
+        }
+    }
+
     void UpdatePlaneAndAnchors(Vector3 newPosition, Quaternion newRotation)
     {
         if (screen != null)
@@ -262,95 +318,15 @@ public class QRManager : MonoBehaviour
             myPlane._bottomRight.transform.position = bottomRight;
         }
     }
-
-
-    public void DetermineScreenCoordinates()
+    // where from line between point1 and point2 is the intersection point, b/w 0-1 means its in b/w p1 and p2!
+    float FindViewportFromIntersection(Vector3 point1, Vector3 point2, Vector3 intersectionPoint)
     {
-        SetARWorldOrigin(); 
-        Ray ray = arCamera.ViewportPointToRay(new Vector2(0.5f, 0.5f));  
-        if (raycastLine == null)
-        {
-            raycastLine = Instantiate(raycastLinePrefab, transform);
-        }
-        var lineRenderer = raycastLine.GetComponent<LineRenderer>();
-        lineRenderer.positionCount = 2;
-        PlaneDisplayData dd = myPlane; 
-        Plane plane = dd._plane;
-        ARAnchor topLeft = dd._topLeft;
-        ARAnchor topRight = dd._topRight;
-        ARAnchor bottomLeft = dd._bottomLeft;
-        ARAnchor bottomRight = dd._bottomRight;
-        if (plane.Raycast(ray, out float enter))
-        {
-            Vector3 intersectionPoint = ray.GetPoint(enter);
-            
-            //Zainab I'm calculating coordinates relative to top-left corner and finding  the right and down vectors using the corner anchors 
-            Vector3 relativePosition = intersectionPoint - topLeft.transform.position;
-            Vector3 rightVector = (topRight.transform.position - topLeft.transform.position).normalized;
-            // rightVector = (topLeft.transform.position - topRight.transform.position).normalized;
-            Vector3 downVector = (bottomLeft.transform.position - topLeft.transform.position).normalized;
-            // Vector3 downVector = (topLeft.transform.position - bottomLeft.transform.position).normalized;
-
-            // Now projecting the relative position onto the right and down vectors
-            float xProjected = Vector3.Project(relativePosition, rightVector).magnitude;
-            float yProjected = Vector3.Project(relativePosition, downVector).magnitude;
-
-            // Have to account for direction relative to the top-left origin, accordingly adjust it and find the projected x and y coordinates and normalize them
-            if (Vector3.Dot(relativePosition, rightVector) < 0) xProjected *= -1;
-            if (Vector3.Dot(relativePosition, downVector) < 0) yProjected *= -1;
-
-            float normalizedX = xProjected / Vector3.Distance(topLeft.transform.position, topRight.transform.position);
-            float normalizedY = yProjected / Vector3.Distance(topLeft.transform.position, bottomLeft.transform.position);
-            float adjustedX = 1.0f - normalizedX;
-            float adjustedY = normalizedY;
-            // Checking that they fall on our screen, otherwise we don't send the coordinates 
-            // if (0 <= normalizedX && normalizedX <= 1.0f && 0 <= normalizedY && normalizedY <= 1.0f)
-            // {
-            //     screenPosition = new Vector2(normalizedX, normalizedY);
-            //     lineRenderer.SetPositions(new Vector3[] { ray.origin, intersectionPoint });
-            //     Debug.Log($"Screen coordinates: {screenPosition}");
-
-            //     UdpSender udpSender = GetComponent<UdpSender>();
-            //     if (udpSender != null)
-            //     {
-            //         udpSender.sendCastData(screenPosition); 
-            //     }
-            // }
-                if (0 <= adjustedX && adjustedX <= 1.0f && 0 <= adjustedY && adjustedY <= 1.0f)
-            {
-                screenPosition = new Vector2(adjustedX, adjustedY);
-                lineRenderer.SetPositions(new Vector3[] { ray.origin, intersectionPoint });
-                Debug.Log($"Screen coordinates: {screenPosition}");
-
-                UdpSender udpSender = GetComponent<UdpSender>();
-                if (udpSender != null)
-                {
-                    Vector3 normalizedRotation = NormalizeRotation(arCamera.transform.rotation, topLeft, topRight, bottomLeft);
-                    udpSender.SendCastCoordData(screenPosition, ray.origin, ray.direction, arCamera.transform.position, arCamera.transform.rotation);
-                    // udpSender.sendCastData(screenPosition); 
-                    // udpSender.sendRayCastData(ray.origin,ray.direction);
-                }
-            }
-    
+        Vector3 screenLine = point2 - point1; // calculating direction vector 
+        Vector3 intersectionLine = intersectionPoint - point1; //calculating intersection vector
+        Vector3 intersectionLineProjected = Vector3.Project(intersectionLine, screenLine.normalized); //project intersection on direction???
+        float sign = Vector3.Dot(screenLine.normalized, intersectionLineProjected.normalized); // find sign of projection
+        return (intersectionLineProjected.magnitude / screenLine.magnitude) * sign; // calculate final intersection position
     }
-
-
-    private Vector3 NormalizeRotation(Quaternion cameraRotation, ARAnchor topLeft, ARAnchor topRight, ARAnchor bottomLeft)
-    {
-        // Define relative rotation vectors based on anchor positions
-        Quaternion topRightRelRot = Quaternion.FromToRotation(topLeft.transform.up, topRight.transform.up);
-        Quaternion bottomLeftRelRot = Quaternion.FromToRotation(topLeft.transform.up, bottomLeft.transform.up);
-
-        // Calculate camera's rotation relative to the topLeft anchor's rotation
-        Quaternion relativeCameraRot = Quaternion.Inverse(topLeft.transform.rotation) * cameraRotation;
-
-        // Project camera's rotation onto defined rotation vectors
-        float horizontalRotAmount = Quaternion.Angle(relativeCameraRot, topRightRelRot) / 180.0f; // Normalize to [0, 1] range assuming max angle is 180 degrees
-        float verticalRotAmount = Quaternion.Angle(relativeCameraRot, bottomLeftRelRot) / 180.0f; // Normalize similarly
-
-        return new Vector3(horizontalRotAmount, verticalRotAmount, 0); // Z component can be ignored or used for another rotational measure
-    }
-
     private void UpdateQRPrefab(ARTrackedImage trackedImage)
     {
         if (_spawnedPrefabs.ContainsKey(trackedImage.referenceImage.name))
@@ -395,3 +371,14 @@ public class QRManager : MonoBehaviour
     }
 
 }
+
+
+                    // Vector3 rotationAxis = Vector3.Cross(ray.direction, normalToPlane);
+                    // float dotProduct = Vector3.Dot(ray.direction, normalToPlane);
+                    // float angleInRadians = Mathf.Acos(dotProduct);
+                    // float angleInDegrees = angleInRadians * Mathf.Rad2Deg;
+                    // Quaternion rotation = Quaternion.AngleAxis(angleInDegrees, rotationAxis.normalized);
+                    // Quaternion normalToPlaneRotation = Quaternion.LookRotation(normalToPlane);
+                    // Quaternion relativeRotation = Quaternion.Inverse(arCamera.transform.rotation) * normalToPlaneRotation;
+                    // Vector3 relativeEulerAngles = relativeRotation.eulerAngles;
+                    // udpSender.SendScreenRotationData(relativeEulerAngles); 
