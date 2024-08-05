@@ -61,28 +61,20 @@ The `QRManager` class is our main function file, detecting the `trackedImage`, i
   - If the plane is being instantiated for the first time (i.e., there is no existing plane object), calculate the center position of the plane from the corners. Instantiate the plane prefab at this position with the appropriate rotation and scale to ensure correct orientation and size in the AR view.
 
 - **Initialize the Gizmo:** 
-  - If a gizmo (a graphical interface tool for manipulating the plane's position and orientation) is associated with the plane, initialize it to allow users to interactively adjust the plane's position and orientation during runtime.
+  - Initialize gizmo to allow users to interactively adjust the plane's position and orientation during runtime.
 
 
 # Function: DetermineScreenCoordinates()
 
-## What It Does
-
-Calculates the coordinates on the virtual plane where the camera's center view intersects. This method is crucial for mapping touch inputs or view centers to specific points on the AR plane.
+**Purpose:** Calculates the coordinates on the virtual plane object where the device's ray intersects.  
 
 ## Steps Explained
 
 **Reset AR World Origin:** 
-- Calls `SetARWorldOrigin` to ensure the AR scene's origin is aligned properly, resetting any drifts or misalignments.
+- Calls `SetARWorldOrigin` to ensure the AR scene's origin is aligned properly, resetting any drifts or misalignments. CHANGED THIS UP 
 
 **Create and Position Ray:** 
 - Casts a ray from the center of the AR camera's viewport (using `new Vector2(0.5f, 0.5f)` for the center point), which aims directly forward from the camera.
-
-**Instantiate Ray Visualization:** 
-- If `raycastLine` isn't already set up, it instantiates `raycastLinePrefab` at the AR camera's position for visualizing the ray in the scene.
-
-**Configure Line Renderer:** 
-- Sets up the line renderer to show the path of the ray, helping with debugging and visual feedback.
 
 **Perform Raycast Against Plane:** 
 - Uses `myPlane._plane.Raycast` to check if and where the ray intersects with the plane defined in `myPlane`.
@@ -101,8 +93,7 @@ Calculates the coordinates on the virtual plane where the camera's center view i
 - Converts absolute distances to proportions of the plane's width and height to get normalized screen coordinates (`normalizedX`, `normalizedY`).
 
 **Check Validity and Set Position:** 
-- Ensures the calculated screen coordinates are valid (i.e., within `[0,1]` range for both x and y).
-- If valid, updates `screenPosition` and sets the positions in the line renderer to visually represent the ray and intersection.
+- Ensures the calculated screen coordinates are in the plane (i.e., within `[0,1]` range for both x and y).
 
-**Send Data (Optional):** 
-- Optionally sends screen rotation and coordinate data via a `UdpSender` component if present, useful for applications needing to transmit interaction data over a network.
+**Send Data:** 
+- Optionally sends screen rotation and coordinate data via a `UdpSender` component
