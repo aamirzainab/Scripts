@@ -64,36 +64,70 @@ The `QRManager` class is our main function file, detecting the `trackedImage`, i
   - Initialize gizmo to allow users to interactively adjust the plane's position and orientation during runtime.
 
 
-# Function: DetermineScreenCoordinates()
+### DetermineScreenCoordinates()
 
-**Purpose:** Calculates the coordinates on the virtual plane object where the device's ray intersects.  
+**Purpose:** Calculates the coordinates on the virtual plane where the camera's center view intersects. This method is crucial for mapping touch inputs or view centers to specific points on the AR plane.
 
-## Steps Explained
+**Detailed Steps:**
 
-**Reset AR World Origin:** 
-- Calls `SetARWorldOrigin` to ensure the AR scene's origin is aligned properly, resetting any drifts or misalignments. CHANGED THIS UP 
+- **Reset AR World Origin:** 
+  - Calls `SetARWorldOrigin` to ensure the AR scene's origin is aligned properly, resetting any drifts or misalignments.
 
-**Create and Position Ray:** 
-- Casts a ray from the center of the AR camera's viewport (using `new Vector2(0.5f, 0.5f)` for the center point), which aims directly forward from the camera.
+- **Create and Position Ray:** 
+  - Casts a ray from the center of the AR camera's viewport (using `new Vector2(0.5f, 0.5f)` for the center point), which aims directly forward from the camera.
 
-**Perform Raycast Against Plane:** 
-- Uses `myPlane._plane.Raycast` to check if and where the ray intersects with the plane defined in `myPlane`.
+- **Instantiate Ray Visualization:** 
+  - If `raycastLine` isn't already set up, it instantiates `raycastLinePrefab` at the AR camera's position for visualizing the ray in the scene.
 
-**Calculate Intersection Details:** 
-- If there's an intersection, computes the point (`intersectionPoint`) and normalizes the direction of the ray for accurate measurement.
-- The relative position to the top-left anchor (`topLeft`) is calculated to determine the exact location on the plane in plane-relative coordinates.
+- **Configure Line Renderer:** 
+  - Sets up the line renderer to show the path of the ray, helping with debugging and visual feedback.
 
-**Project onto Plane Axes:** 
-- Projects the intersection point onto the plane's right and downward axes to convert the 3D point into two 2D coordinates (`xProjected`, `yProjected`).
+- **Perform Raycast Against Plane:** 
+  - Uses `myPlane._plane.Raycast` to check if and where the ray intersects with the plane defined in `myPlane`.
 
-**Adjust Coordinates:** 
-- Adjusts projected coordinates to ensure they are within the plane's bounds, flipping signs if necessary depending on the dot product results.
+- **Calculate Intersection Point:** 
+  - `intersectionPoint = ray.GetPoint(enter);`
+  - This line calculates the exact point where the ray intersects the plane. The `enter` variable holds the distance along the ray from its origin to the point of intersection on the plane.
 
-**Normalize and Adjust Projections:** 
-- Converts absolute distances to proportions of the plane's width and height to get normalized screen coordinates (`normalizedX`, `normalizedY`).
+- **Determine Ray Direction:** 
+  - `rayDirection = (intersectionPoint - ray.origin).normalized;`
+  - This determines the direction of the ray at the point of intersection, normalized to ensure it has a unit length. Normalization helps maintain accuracy in subsequent calculations involving angles and projections.
 
-**Check Validity and Set Position:** 
-- Ensures the calculated screen coordinates are in the plane (i.e., within `[0,1]` range for both x and y).
+- **Calculate Intersection Details:** 
+  - If there's an intersection, computes the point (`intersectionPoint`) and normalizes the direction of the ray for accurate measurement.
+  - The relative position to the top-left anchor (`topLeft`) is calculated to determine the exact location on the plane in plane-relative coordinates.
 
-**Send Data:** 
-- Optionally sends screen rotation and coordinate data via a `UdpSender` component
+- **Calculate Relative Position:** 
+  - `relativePosition = intersectionPoint - topLeft.transform.position;`
+  - This finds the vector from the top-left corner of the plane (defined by the anchor at topLeft) to the intersection point. It's used to determine how far along and down the plane the intersection occurs.
+
+- **Define Right and Down Vectors:** 
+  - `rightVector = (topRight.transform.position - topLeft.transform.position).normalized;`
+  - `downVector = (bottomLeft.transform.position - topLeft.transform.position).normalized;`
+  - These lines define the vectors for the right and down directions of the plane relative to the top-left corner. These vectors are normalized to simplify the projection calculations by removing scale factors.
+
+- **Project Relative Position:** 
+  - `xProjected = Vector3.Project(relativePosition, rightVector).magnitude;`
+  - `yProjected = Vector3.Project(relativePosition, downVector).magnitude;`
+  - Here, the relative position vector is projected onto the plane’s right and down vectors. This step converts the 3D intersection coordinates into two 2D coordinates relative to the plane’s local axes.
+
+- **Adjust Coordinates:** 
+  - The dot products `Vector3.Dot(relativePosition, rightVector)` and `Vector3.Dot(relativePosition, downVector)` are checked to determine if the projected points fall on the negative side of the top-left origin. If so, the projections are negated to accurately reflect their positions relative to the top-left corner.
+
+- **Normalize Coordinates:** 
+  - `normalizedX = xProjected / Vector3.Distance(topLeft.transform.position, topRight.transform.position);`
+  - `normalizedY = yProjected / Vector3.Distance(topLeft.transform.position, bottomLeft.transform.position);`
+  - The projected distances are normalized by dividing by the actual distances between the relevant corners of the plane. This converts the measurements into a scale from 0 to 1, where 0 represents the top/left edge, and 1 represents the bottom/right edge of the plane.
+
+- **Adjust X Coordinates:** 
+  - `adjustedX = 1.0f - normalizedX;`
+  - For X coordinates, this adjustment flips the X-axis to ensure it aligns correctly from left to right, assuming the initial calculation was inverted.
+
+- **Calculate Angles for Debugging:** 
+  - Angles between the ray direction and the plane's normal, right, and down vectors are calculated and converted to degrees for easier interpretation and potential debugging. These angles provide insights into the orientation of the ray relative to the plane, useful for understanding interaction dynamics.
+
+- **Set Screen Position:** 
+  - Checks if the normalized and adjusted coordinates are within the bounds of the plane. If they are, it updates `screenPosition` and adjusts the line renderer to visually represent this calculation in the AR scene.
+
+- **Send Data:** 
+  - Optionally sends screen rotation and coordinate data via a `UdpSender` component if present, useful for applications needing to transmit interaction data over a network.
