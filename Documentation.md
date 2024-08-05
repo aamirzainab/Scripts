@@ -104,7 +104,7 @@ The `QRManager` class is our main function file, detecting the `trackedImage`, i
 - **Define Right and Down Vectors:** 
   - `rightVector = (topRight.transform.position - topLeft.transform.position).normalized;`
   - `downVector = (bottomLeft.transform.position - topLeft.transform.position).normalized;`
-  - These lines define the vectors for the right and down directions of the plane relative to the top-left corner. These vectors are normalized to simplify the projection calculations by removing scale factors.
+  - Definining  the right and down normalized vectors of the plane.  
 
 - **Project Relative Position:** 
   - `xProjected = Vector3.Project(relativePosition, rightVector).magnitude;`
@@ -119,15 +119,6 @@ The `QRManager` class is our main function file, detecting the `trackedImage`, i
   - `normalizedY = yProjected / Vector3.Distance(topLeft.transform.position, bottomLeft.transform.position);`
   - The projected distances are normalized by dividing by the actual distances between the relevant corners of the plane. This converts the measurements into a scale from 0 to 1, where 0 represents the top/left edge, and 1 represents the bottom/right edge of the plane.
 
-- **Adjust X Coordinates:** 
-  - `adjustedX = 1.0f - normalizedX;`
-  - For X coordinates, this adjustment flips the X-axis to ensure it aligns correctly from left to right, assuming the initial calculation was inverted.
-
-- **Calculate Angles for Debugging:** 
-  - Angles between the ray direction and the plane's normal, right, and down vectors are calculated and converted to degrees for easier interpretation and potential debugging. These angles provide insights into the orientation of the ray relative to the plane, useful for understanding interaction dynamics.
-
-- **Set Screen Position:** 
-  - Checks if the normalized and adjusted coordinates are within the bounds of the plane. If they are, it updates `screenPosition` and adjusts the line renderer to visually represent this calculation in the AR scene.
 
 - **Send Data:** 
-  - Optionally sends screen rotation and coordinate data via a `UdpSender` component if present, useful for applications needing to transmit interaction data over a network.
+  - Send iPad 6dof and screen-coordinate data via a `UdpSender` component
