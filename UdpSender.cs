@@ -10,7 +10,7 @@ using System.Linq;
 public class UdpSender : MonoBehaviour
 {
     private UdpClient udpClient;
-    public string host = "130.245.4.133"; //  IP address of the receiver
+    public string host = "130.245.4.133"; //  IP address of the receiver, MINI_RD 
     public int port = 8081; //  port on which data will be sent
     public float sendInterval = 0.1f; //  interval in seconds between sends
     public Camera arCamera;  
@@ -19,7 +19,6 @@ public class UdpSender : MonoBehaviour
     void Start()
     {
         udpClient = new UdpClient(); 
-        Debug.Log("did ya alrady come here zainab "); 
         Input.gyro.enabled = true; 
         Input.compass.enabled = true;
     }
@@ -103,7 +102,7 @@ public class UdpSender : MonoBehaviour
                      $"{gyroAttitude.x},{gyroAttitude.y},{gyroAttitude.z},{gyroAttitude.w}";
         byte[] bytesToSend = Encoding.ASCII.GetBytes(message);
         udpClient.SendAsync(bytesToSend, bytesToSend.Length, host, port);
-        Debug.Log("Sent Combined Data: " + message);
+        Debug.Log("Sent Combined Data: " + message + " to " + host +  " on port " + port );
     }
 
     public void SendScreenRotationData(float angleWithNormal, float angleWithRight, float angleWithDown)

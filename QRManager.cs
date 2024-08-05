@@ -198,6 +198,7 @@ public class QRManager : MonoBehaviour
         Vector3 topRight = pointOnPlane + right * widthInMeters;
         Vector3 bottomLeft = pointOnPlane - image_up * heightInMeters;
         Vector3 bottomRight = bottomLeft + right * widthInMeters;
+        Vector3 bottomCenter = (bottomLeft + bottomRight) / 2;
 
         ARAnchor tLeftAnchor = CreateARAnchor(pointOnPlane);  // Top-left 
         ARAnchor tRightAnchor = CreateARAnchor(topRight);  // Top-right 
@@ -212,6 +213,8 @@ public class QRManager : MonoBehaviour
             _bottomLeft = bLeftAnchor,
             _bottomRight = bRightAnchor
         };
+
+        // SetARWorldOrigin(myPlane._topLeft.transform); 
         if (screen == null)
         {
             Vector3 centerPosition = (myPlane._topLeft.transform.position + myPlane._topRight.transform.position + myPlane._bottomLeft.transform.position + myPlane._bottomRight.transform.position) / 4;
@@ -221,12 +224,12 @@ public class QRManager : MonoBehaviour
             screen = Instantiate(planePrefab, centerPosition, rotation);
             screen.transform.localScale = new Vector3(1.86f, 0.726f, 0.02f);  
             InitializeGizmo();
+           
         }
     }
 
     public void DetermineScreenCoordinates()
     {
-        SetARWorldOrigin(); 
         Ray ray = arCamera.ViewportPointToRay(new Vector2(0.5f, 0.5f));  
         if (raycastLine == null)
         {
@@ -240,6 +243,7 @@ public class QRManager : MonoBehaviour
         ARAnchor topRight = dd._topRight;
         ARAnchor bottomLeft = dd._bottomLeft;
         ARAnchor bottomRight = dd._bottomRight;
+        Vector3 bottomCenter =(dd._bottomLeft.transform.position + dd._bottomRight.transform.position) / 2;
         if (plane.Raycast(ray, out float enter))
         {
             Vector3 intersectionPoint = ray.GetPoint(enter);
@@ -280,7 +284,9 @@ public class QRManager : MonoBehaviour
                 if (udpSender != null)
                 { 
                     udpSender.SendScreenRotationData(angle,angleWithNormal,angleWithDown); 
-                    udpSender.SendCastCoordData(screenPosition, ray.origin, ray.direction, arCamera.transform.position, arCamera.transform.rotation);
+                    Vector3 relativeCameraPosition = arCamera.transform.position - bottomCenter;
+                    Quaternion relativeCameraRotation = Quaternion.Inverse(topLeft.transform.rotation) * arCamera.transform.rotation;
+                    udpSender.SendCastCoordData(screenPosition, ray.origin, ray.direction, relativeCameraPosition, relativeCameraRotation);
                 }
             }
         }
@@ -355,14 +361,44 @@ public class QRManager : MonoBehaviour
         }
     }
 
-    private void SetARWorldOrigin()
+    // private void SetARWorldOrigin(Transform newOrigin)
+    // {
+    //     ARSessionOrigin arSessionOrigin = FindObjectOfType<ARSessionOrigin>();
+    //     if (arSessionOrigin != null)
+    //     {
+    //         // arSessionOrigin.transform.rotation = Quaternion.identity;
+    //         arSessionOrigin.transform.position = newOrigin.position;
+    //         arSessionOrigin.transform.rotation = newOrigin.rotation;
+    //     }
+    //     Debug.Log("Zainab : Setting the origin to top left anchor position!"); 
+    // }
+
+    private void SetARWorldOrigin(Transform newOrigin)
+{
+    ARSessionOrigin arSessionOrigin = FindObjectOfType<ARSessionOrigin>();
+    if (arSessionOrigin != null)
     {
-        ARSessionOrigin arSessionOrigin = FindObjectOfType<ARSessionOrigin>();
-        if (arSessionOrigin != null)
+        Vector3 positionOffset = arSessionOrigin.transform.position - newOrigin.position;
+        Quaternion rotationOffset = Quaternion.Inverse(newOrigin.rotation) * arSessionOrigin.transform.rotation;
+
+        // Apply position and rotation offsets
+        arSessionOrigin.transform.position -= positionOffset;
+        arSessionOrigin.transform.rotation = rotationOffset;
+
+        // Adjust all AR content accordingly
+        Transform[] arObjects = arSessionOrigin.GetComponentsInChildren<Transform>();
+        foreach (Transform arObject in arObjects)
         {
-            arSessionOrigin.transform.rotation = Quaternion.identity;
+            if (arObject != arSessionOrigin.transform)
+            {
+                arObject.position += positionOffset;
+                arObject.rotation = rotationOffset * arObject.rotation;
+            }
         }
     }
+    Debug.Log("Zainab: Setting the origin to top left anchor position!");
+}
+
 
     ARAnchor CreateARAnchor(Vector3 pos)
     {
